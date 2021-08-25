@@ -1,8 +1,9 @@
 const Web3 = require("web3");
 const ethers = require("ethers");
 const ethProvider = require("eth-provider");
+const { EVMcrispr } = require("@commonsswarm/evmcrispr");
 
-tokenAddress = "0x68ea056d4fb87147a9a237c028b6b1476bf7b367";
+const dao = "0x9a8B8BBb6Aa82550de6613989292f256420fa6Db";
 
 const run = async () => {
   // we use 'eth-provider' so frame works as expected
@@ -12,13 +13,15 @@ const run = async () => {
     new Web3(ethProvider())._provider
   );
   const signer = provider.getSigner();
+  const crispr = new EVMcrispr(signer, 4);
 
-  const token = new ethers.Contract(
-    tokenAddress,
-    ["function mint(address to, uint256 amount) public"],
-    signer
-  );
-  await token.mint("0x" + "F".repeat(40), (1e18).toString());
+  await crispr.connect(dao);
+
+  await crispr.forward([
+    crispr.installNewApp("agent:reserve"),
+    crispr.addPermission(["token-manager", "agent:reserve", "TRANSFER_ROLE"]),
+    { path: ["token-manager", "voting"] },
+  ]);
 };
 
 run()
